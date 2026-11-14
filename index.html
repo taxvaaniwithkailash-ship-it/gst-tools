@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en-IN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Open-Source GST Set-off Engine (GSTR-3B Table 6.1) | KSV Accounting &amp; Taxation Consultants</title>
+<meta name="description" content="Free, open-source JavaScript engine for GST ITC set-off under Sections 49, 49A, 49B and Rules 88A and 86B of the CGST law, with a live demo and test cases. Maintained by KSV Accounting &amp; Taxation Consultants, Gurugram.">
+<style>
+:root{--ink:#1d2433;--ink2:#555e70;--rule:#d6d9e0;--gold:#a8742a;--bg:#fff;--alt:#f6f4ef;--r:8px}
+*{box-sizing:border-box}body{margin:0;font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+.w{max-width:1000px;margin:0 auto;padding:0 16px}header{background:var(--ink);color:#fff;padding:28px 0}header a{color:#f2d39a}
+h1{font-size:30px;line-height:1.25;margin:6px 0 10px}h2{margin-top:36px}section{padding:18px 0}.alt{background:var(--alt)}
+table{border-collapse:collapse;width:100%}th,td{border:1px solid var(--rule);padding:8px 10px;text-align:left;vertical-align:top}
+.so-scroll{overflow-x:auto;margin:14px 0}.so-in input{width:100%;min-width:110px;padding:9px 10px;border:1px solid var(--rule);border-radius:var(--r);font:16px inherit;text-align:right}
+.so-opts{display:flex;flex-wrap:wrap;gap:14px 26px;font-size:15px;margin:10px 0 16px;align-items:center}.so-chk{display:flex;gap:8px;align-items:center}
+.so-acts{display:flex;gap:10px;flex-wrap:wrap}.btn{padding:10px 18px;border-radius:var(--r);border:1px solid var(--ink);background:#fff;font:15px inherit;cursor:pointer}.btn-p{background:var(--ink);color:#fff}
+.so-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:22px 0 6px}.so-sum div{border:1px solid var(--rule);border-radius:var(--r);padding:12px 14px}.so-sum b{display:block;font-size:22px}.so-sum span{font-size:13px;color:var(--ink2)}
+.so-tot th,.so-tot td{font-weight:700}.so-note{font-size:14px;color:var(--ink2)}.so-warn{border-left:4px solid var(--gold);background:#fff8ea;padding:10px 14px;margin:12px 0}
+pre{background:#f3f4f7;padding:14px;overflow-x:auto;border-radius:var(--r);font-size:14px}footer{padding:28px 0;font-size:15px;color:var(--ink2)}
+</style></head><body>
+<header><div class="w"><p style="margin:0">Open-source GST tools by <a href="https://ksvatc.in/">KSV Accounting &amp; Taxation Consultants</a>, Gurugram</p>
+<h1>GST set-off engine for GSTR-3B (Table 6.1)</h1>
+<p style="margin:0;max-width:760px">A small, dependency-free JavaScript implementation of the order in which input tax credit pays output tax under the CGST law, published so that accountants and developers can check, reuse and improve it.</p></div></header>
+
+<section><div class="w">
+<h2 style="margin-top:8px">Live demo</h2>
+<p>Enter the month's figures in rupees. Output tax is the forward-charge liability; ITC available is the opening credit ledger balance plus this month's eligible ITC.</p>
+<div class="so">
+<div class="so-scroll"><table class="so-in"><thead><tr><th>Tax head</th><th>Output tax (forward charge)</th><th>Reverse charge tax</th><th>ITC available</th></tr></thead><tbody><tr><th scope="row">IGST</th><td><input inputmode="decimal" data-f="liab" data-h="I" aria-label="IGST output tax" placeholder="0"></td><td><input inputmode="decimal" data-f="rcm" data-h="I" aria-label="IGST reverse charge tax" placeholder="0"></td><td><input inputmode="decimal" data-f="itc" data-h="I" aria-label="IGST ITC available" placeholder="0"></td></tr><tr><th scope="row">CGST</th><td><input inputmode="decimal" data-f="liab" data-h="C" aria-label="CGST output tax" placeholder="0"></td><td><input inputmode="decimal" data-f="rcm" data-h="C" aria-label="CGST reverse charge tax" placeholder="0"></td><td><input inputmode="decimal" data-f="itc" data-h="C" aria-label="CGST ITC available" placeholder="0"></td></tr><tr><th scope="row">SGST/UTGST</th><td><input inputmode="decimal" data-f="liab" data-h="S" aria-label="SGST/UTGST output tax" placeholder="0"></td><td><input inputmode="decimal" data-f="rcm" data-h="S" aria-label="SGST/UTGST reverse charge tax" placeholder="0"></td><td><input inputmode="decimal" data-f="itc" data-h="S" aria-label="SGST/UTGST ITC available" placeholder="0"></td></tr><tr><th scope="row">Cess</th><td><input inputmode="decimal" data-f="liab" data-h="X" aria-label="Cess output tax" placeholder="0"></td><td><input inputmode="decimal" data-f="rcm" data-h="X" aria-label="Cess reverse charge tax" placeholder="0"></td><td><input inputmode="decimal" data-f="itc" data-h="X" aria-label="Cess ITC available" placeholder="0"></td></tr></tbody></table></div>
+<div class="so-opts"><label class="so-chk"><input type="checkbox" id="so86"> Rule 86B applies</label>
+<label>Balance IGST liability, use first: <select id="soord"><option value="CS">CGST credit, then SGST</option><option value="SC">SGST credit, then CGST</option></select></label>
+<label>Days of delay (interest): <input id="sodays" inputmode="numeric" placeholder="0" style="width:90px"></label></div>
+<div class="so-acts"><button class="btn btn-p" id="sogo" type="button">Calculate set-off</button><button class="btn" id="soex" type="button">Load an example</button><button class="btn" id="soclr" type="button">Clear</button></div>
+<div id="soout" aria-live="polite"></div></div>
+<p>The full calculator, with explanations, FAQs and the Rule 86B exceptions, is at <a href="https://ksvatc.in/tools/gst-set-off-calculator/">ksvatc.in GST set-off calculator</a>.</p>
+</div></section>
+
+<section class="alt"><div class="w">
+<h2 style="margin-top:8px">Rules the engine applies</h2>
+<table><thead><tr><th>Step</th><th>Rule</th><th>Legal basis</th></tr></thead><tbody>
+<tr><td>1</td><td>IGST credit first against IGST</td><td>Section 49(5)(a), Rule 88A</td></tr>
+<tr><td>2</td><td>Balance IGST credit against CGST and SGST, in any order and proportion; it must be fully used before CGST or SGST credit</td><td>Sections 49(5)(a), 49A, Rule 88A</td></tr>
+<tr><td>3</td><td>CGST credit against CGST, SGST credit against SGST; never CGST against SGST or the reverse</td><td>Section 49(5)(b) to (d)</td></tr>
+<tr><td>4</td><td>Remaining CGST or SGST credit against IGST, only after IGST credit is exhausted</td><td>Section 49(5)(b),(c), Rule 88A</td></tr>
+<tr><td>5</td><td>Compensation cess credit only against cess</td><td>Compensation Cess Act, Section 11</td></tr>
+<tr><td>-</td><td>Reverse charge tax paid in cash</td><td>Section 49(4) read with Section 2(82)</td></tr>
+<tr><td>-</td><td>Where Rule 86B applies, ITC may discharge at most 99% of output tax</td><td>Rule 86B</td></tr>
+<tr><td>-</td><td>Interest at 18% a year on tax paid in cash after the due date</td><td>Section 50</td></tr>
+</tbody></table>
+
+<h2>Use it in your own code</h2>
+<pre>const gstSetoff = require('./gst-setoff.js');   // or &lt;script src="gst-setoff.js"&gt; then window.gstSetoff
+const r = gstSetoff({
+  liab: { I: 100000, C: 60000, S: 60000, X: 0 },   // forward-charge output tax
+  rcm:  { I: 0,      C: 2000,  S: 2000,  X: 0 },   // reverse charge tax (cash only)
+  itc:  { I: 130000, C: 25000, S: 45000, X: 0 },   // ITC available
+  r86b: false, igstOrder: 'CS', days: 0
+});
+console.log(r.cashTotal);   // 24000</pre>
+<p>Source, tests and licence: see the repository files <code>gst-setoff.js</code>, <code>test.js</code> and <code>LICENSE</code>. Run <code>node test.js</code> to check the engine against the legal cases above.</p>
+</div></section>
+
+<section><div class="w">
+<h2 style="margin-top:8px">More free GST tools and guides</h2>
+<ul>
+<li><a href="https://ksvatc.in/tools/gst-registration-check/">Do I need GST registration? A 6-question check</a></li>
+<li><a href="https://ksvatc.in/tools/">All free GST tools</a></li>
+<li><a href="https://ksvatc.in/blog/gst-notice-time-limit-year-wise/">GST notice time limits, year by year</a></li>
+<li><a href="https://ksvatc.in/gst-registration/">GST registration in Gurgaon</a> and <a href="https://ksvatc.in/gst-consultant-gurgaon/">GST consultant in Gurgaon</a></li>
+</ul>
+<p class="so-note">The engine gives an estimate for planning. Always check the final set-off on the GST portal before filing GSTR-3B. Law as on 14 Nov 2026.</p>
+</div></section>
+<footer><div class="w">Maintained by <a href="https://ksvatc.in/">KSV Accounting &amp; Taxation Consultants</a>, SCO 75, 2nd Floor, HUDA Market, Sector 10A, Gurugram, Haryana 122001. Released under the MIT licence.</div></footer>
+<script src="gst-setoff.js"></script>
+<script>
+(function(){
+  var H=[['I','IGST'],['C','CGST'],['S','SGST/UTGST'],['X','Cess']];
+  var N={I:'IGST',C:'CGST',S:'SGST',X:'Cess'};
+  function num(v){v=String(v||'').replace(/[,\s₹]/g,'');var n=parseFloat(v);return isFinite(n)&&n>0?n:0;}
+  function fmt(n){return (Math.round(n*100)/100).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2});}
+  function read(){var o={liab:{},rcm:{},itc:{}};document.querySelectorAll('.so-in input').forEach(function(i){o[i.dataset.f][i.dataset.h]=num(i.value);});
+    o.r86b=document.getElementById('so86').checked;o.igstOrder=document.getElementById('soord').value;o.days=num(document.getElementById('sodays').value);return o;}
+  function run(){
+    var r=window.gstSetoff(read()),R=r.rows,t='';
+    t+='<div class="so-sum"><div><b>Rs '+fmt(r.cashTotal)+'</b><span>Total tax payable in cash</span></div><div><b>Rs '+fmt(r.itcTotal)+'</b><span>Paid through ITC</span></div>'+
+      '<div><b>Rs '+fmt(R.I.carry+R.C.carry+R.S.carry+R.X.carry)+'</b><span>ITC carried forward</span></div>'+(r.days?'<div><b>Rs '+fmt(r.interest)+'</b><span>Interest at 18% for '+r.days+' days (s.50)</span></div>':'')+'</div>';
+    t+='<h3 style="margin-top:18px">Set-off (as in GSTR-3B Table 6.1)</h3><div class="so-scroll"><table><thead><tr><th>Tax head</th><th>Tax payable</th><th>Paid by IGST ITC</th><th>Paid by CGST ITC</th><th>Paid by SGST ITC</th><th>Paid by Cess ITC</th><th>Paid in cash</th><th>ITC carried forward</th></tr></thead><tbody>';
+    var T={p:0,i:0,c:0,s:0,x:0,k:0,f:0};
+    H.forEach(function(h){var x=R[h[0]];T.p+=x.payable;T.i+=x.byI;T.c+=x.byC;T.s+=x.byS;T.x+=x.byX;T.k+=x.cash;T.f+=x.carry;
+      t+='<tr><th scope="row">'+h[1]+'</th><td>'+fmt(x.payable)+'</td><td>'+fmt(x.byI)+'</td><td>'+fmt(x.byC)+'</td><td>'+fmt(x.byS)+'</td><td>'+fmt(x.byX)+'</td><td>'+fmt(x.cash)+'</td><td>'+fmt(x.carry)+'</td></tr>';});
+    t+='<tr class="so-tot"><th scope="row">Total</th><td>'+fmt(T.p)+'</td><td>'+fmt(T.i)+'</td><td>'+fmt(T.c)+'</td><td>'+fmt(T.s)+'</td><td>'+fmt(T.x)+'</td><td>'+fmt(T.k)+'</td><td>'+fmt(T.f)+'</td></tr></tbody></table></div>';
+    t+='<p class="so-note">Columns "Paid by ... ITC" show the credit used against each tax head (rows). Cash includes reverse charge tax of Rs '+fmt(R.I.rcm+R.C.rcm+R.S.rcm+R.X.rcm)+'.</p>';
+    t+='<h3>Cash challan (PMT-06), by head</h3><div class="so-scroll"><table><thead><tr><th>Head</th><th>Tax</th>'+(r.days?'<th>Interest (est.)</th>':'')+'</tr></thead><tbody>';
+    H.forEach(function(h){var x=R[h[0]];if(x.cash>0)t+='<tr><th scope="row">'+h[1]+'</th><td>'+fmt(x.cash)+'</td>'+(r.days?'<td>'+fmt(Math.round(x.cash*0.18*r.days/365*100)/100)+'</td>':'')+'</tr>';});
+    if(r.cashTotal===0)t+='<tr><td colspan="3">No cash payment needed for tax.</td></tr>';
+    t+='</tbody></table></div>';
+    if(r.r86){t+='<div class="so-warn">Rule 86B: output tax Rs '+fmt(r.r86.output)+'. ITC can pay up to Rs '+fmt(r.r86.cap)+' (99%), so at least Rs '+fmt(r.r86.minCash)+' is paid in cash.'+(r.r86.reduced>0?' ITC use was reduced by Rs '+fmt(r.r86.reduced)+' to meet this; that credit is carried forward.':' Your cash payment already meets this.')+'</div>';}
+    var C=R.C.carry,S=R.S.carry;if((R.C.cashFwd>0&&S>0)||(R.S.cashFwd>0&&C>0))t+='<div class="so-warn">One head has a cash payment while the other has unused credit. CGST and SGST credit cannot be used against each other (Section 49(5)), so this cash is unavoidable.</div>';
+    if(r.steps.length){t+='<h3>Order applied</h3><ol class="so-steps">';var lab={1:'IGST credit against IGST',2:'Balance IGST credit against CGST / SGST',3:'Own credit against own head',4:'CGST / SGST credit against balance IGST',5:'Cess credit against cess'};
+      r.steps.forEach(function(s){t+='<li>'+lab[s.step]+': '+N[s.c]+' credit Rs '+fmt(s.amt)+' used for '+N[s.l]+'</li>';});t+='</ol>';}
+    t+='<p class="so-note">Estimate for planning. Check the final set-off on the GST portal before filing GSTR-3B. <button class="btn btn-o" type="button" onclick="window.print()" style="padding:6px 12px;font-size:14px">Print</button></p>';
+    var o=document.getElementById('soout');o.innerHTML=t;o.scrollIntoView({behavior:'smooth',block:'start'});
+    
+  }
+  document.getElementById('sogo').addEventListener('click',run);
+  document.getElementById('soclr').addEventListener('click',function(){document.querySelectorAll('.so input').forEach(function(i){if(i.type==='checkbox')i.checked=false;else i.value='';});document.getElementById('soout').innerHTML='';});
+  document.getElementById('soex').addEventListener('click',function(){
+    var ex={liab:{I:100000,C:60000,S:60000,X:0},rcm:{I:0,C:2000,S:2000,X:0},itc:{I:130000,C:25000,S:45000,X:0}};
+    document.querySelectorAll('.so-in input').forEach(function(i){var v=ex[i.dataset.f][i.dataset.h];i.value=v?v:'';});run();});
+})();
+</script>
+</body></html>
